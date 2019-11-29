@@ -7,15 +7,16 @@ use Eljam\CircuitBreaker\Event\CircuitEvent;
 use Eljam\CircuitBreaker\Event\CircuitEvents;
 use Eljam\CircuitBreaker\Exception\CircuitOpenException;
 use Eljam\CircuitBreaker\Exception\CustomException;
+use PHPUnit\Framework\TestCase;
 
 /**
  * Class BreakerTest.
  */
-class BreakerTest extends \PHPUnit_Framework_TestCase
+class BreakerTest extends TestCase
 {
     protected $dir;
 
-    public function setUp()
+    public function setUp(): void
     {
         $this->dir = sys_get_temp_dir().DIRECTORY_SEPARATOR.'store';
     }
@@ -62,7 +63,7 @@ class BreakerTest extends \PHPUnit_Framework_TestCase
             $this->assertInstanceOf('Eljam\CircuitBreaker\Circuit', $event->getCircuit());
         });
 
-        $this->setExpectedException('Eljam\CircuitBreaker\Exception\CircuitOpenException');
+        $this->expectException('Eljam\CircuitBreaker\Exception\CircuitOpenException');
 
         $fn = function () {
             throw new CustomException("An error as occurred");
@@ -160,7 +161,7 @@ class BreakerTest extends \PHPUnit_Framework_TestCase
         );
         $hello = 'eljam';
 
-        $this->setExpectedException('Eljam\CircuitBreaker\Exception\CustomException');
+        $this->expectException('Eljam\CircuitBreaker\Exception\CustomException');
 
         $fn = function () use ($hello) {
             throw new CustomException("An error as occurred");
@@ -171,36 +172,7 @@ class BreakerTest extends \PHPUnit_Framework_TestCase
         $breaker->protect($fn);
     }
 
-    public function testAllowedException()
-    {
-        $breaker = new Breaker(
-            'allowed_exception',
-            [
-                'ignore_exceptions' => false,
-                'allowed_exceptions' => [
-                    'Eljam\CircuitBreaker\Exception\CustomException',
-                ],
-            ]
-        );
-
-        $breaker1FailureCount = 0;
-        $breaker->addListener(CircuitEvents::FAILURE, function (CircuitEvent $event) use (&$breaker1FailureCount) {
-            $breaker1FailureCount = $event->getCircuit()->getFailures();
-        });
-
-        $fn = function () {
-            throw new CustomException("An error as occurred");
-        };
-
-        try {
-            $breaker->protect($fn);
-        } catch (CustomException $e) {
-            $this->assertInstanceOf('Eljam\CircuitBreaker\Exception\CustomException', $e);
-        }
-        $this->assertSame(0, $breaker1FailureCount);
-    }
-
-    public function tearDown()
+    public function tearDown(): void
     {
         @unlink($this->dir);
     }
